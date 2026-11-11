@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,6 +34,10 @@ body {
     font-family: Inter, sans-serif;
     height: 100dvh;
     overflow: hidden;
+}
+
+input, button {
+    font-family: inherit;
 }
 
 /* AUTH SCREEN */
@@ -94,10 +97,6 @@ body {
     line-height: 1.6;
 }
 
-input, button {
-    font-family: inherit;
-}
-
 #usernameInput,
 #passwordInput {
     width: 100%;
@@ -145,7 +144,7 @@ input, button {
 
 .primary-btn:disabled {
     opacity: .5;
-    cursor: not-allowed;
+    cursor: wait;
     transform: none;
 }
 
@@ -154,6 +153,7 @@ input, button {
     font-size: 12px;
     margin-top: 12px;
     min-height: 16px;
+    line-height: 1.5;
 }
 
 .auth-switch {
@@ -238,10 +238,6 @@ input, button {
     height: 16px;
     margin-top: 1px;
     accent-color: var(--purple);
-}
-
-.terms-check a {
-    color: #c4b5fd;
 }
 
 /* CHAT APPLICATION */
@@ -345,10 +341,6 @@ input, button {
     font-weight: 700;
     cursor: pointer;
     flex-shrink: 0;
-}
-
-.logout-btn:hover {
-    background: #3a2637;
 }
 
 /* CHAT AREA */
@@ -499,10 +491,6 @@ input, button {
     cursor: pointer;
 }
 
-#sendButton:hover {
-    filter: brightness(1.2);
-}
-
 .footer-info {
     display: flex;
     justify-content: space-between;
@@ -642,8 +630,6 @@ input, button {
             autocomplete="new-password"
         >
 
-        <!-- TERMS: SIGNUP ONLY -->
-
         <div id="termsSection">
 
             <div class="terms-heading">
@@ -734,11 +720,11 @@ input, button {
 
         </div>
 
-        <button class="primary-btn" id="joinButton">
+        <button class="primary-btn" id="joinButton" type="button">
             CREATE ACCOUNT →
         </button>
 
-        <button class="auth-switch" id="authSwitch">
+        <button class="auth-switch" id="authSwitch" type="button">
             Already have an account? Log in
         </button>
 
@@ -786,7 +772,6 @@ input, button {
         </header>
 
         <main class="chat-area" id="chatArea">
-
             <div class="welcome-message">
                 <h2>Welcome to YAPZONE!</h2>
                 <p>
@@ -794,7 +779,6 @@ input, button {
                     Be respectful and enjoy the conversation.
                 </p>
             </div>
-
         </main>
 
         <footer class="input-area">
@@ -809,7 +793,7 @@ input, button {
                     autocomplete="off"
                 >
 
-                <button id="sendButton" title="Send message">
+                <button id="sendButton" type="button" title="Send message">
                     ➤
                 </button>
 
@@ -829,6 +813,8 @@ input, button {
 <div id="toast"></div>
 
 <script>
+/* SOCKET */
+
 const socket = io({
     autoConnect: false,
     reconnection: true
@@ -870,6 +856,7 @@ let username = "";
 let joined = false;
 let authMode = "signup";
 let toastTimer;
+let joinTimer;
 
 /* NOTIFICATIONS */
 
@@ -886,7 +873,13 @@ function showToast(message) {
 
 /* AUTH MODE */
 
-function setAuthMode(mode) {
+/*
+ * The checkbox is deliberately NOT reset every time this function runs.
+ * That way, a failed signup does not erase the user's agreement.
+ */
+
+function setAuthMode(mode, resetTerms = false) {
+
     authMode = mode;
 
     const signingUp = mode === "signup";
@@ -913,18 +906,49 @@ function setAuthMode(mode) {
 
     termsSection.style.display = signingUp ? "block" : "none";
 
-    termsCheckbox.checked = false;
+    if (resetTerms) {
+        termsCheckbox.checked = false;
+    }
 
     loginError.textContent = "";
 }
 
 authSwitch.addEventListener("click", () => {
-    setAuthMode(authMode === "signup" ? "login" : "signup");
+
+    const newMode = authMode === "signup" ? "login" : "signup";
+
+    setAuthMode(newMode, true);
 });
+
+/* REQUEST WITH TIMEOUT */
+
+async function fetchWithTimeout(url, options, timeout = 15000) {
+
+    const controller = new AbortController();
+
+    const timeoutId = setTimeout(() => {
+        controller.abort();
+    }, timeout);
+
+    try {
+
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+
+    } finally {
+
+        clearTimeout(timeoutId);
+
+    }
+}
 
 /* SIGNUP AND LOGIN */
 
 async function submitAuth() {
+
+    if (joinButton.disabled) return;
 
     const usernameValue = usernameInput.value.trim();
     const passwordValue = passwordInput.value;
@@ -954,9 +978,11 @@ async function submitAuth() {
         return;
     }
 
+    const submittedMode = authMode;
+
     joinButton.disabled = true;
 
-    joinButton.textContent = authMode === "signup"
+    joinButton.textContent = submittedMode === "signup"
         ? "CREATING..."
         : "LOGGING IN...";
 
@@ -967,64 +993,128 @@ async function submitAuth() {
             password: passwordValue
         };
 
-        if (authMode === "signup") {
+        if (submittedMode === "signup") {
             requestBody.termsAccepted = termsCheckbox.checked;
         }
 
-        const response = await fetch(`/api/${authMode}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "same-origin",
-            body: JSON.stringify(requestBody)
-        });
+        const response = await fetchWithTimeout(
+            `/api/${submittedMode}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "same-origin",
+                body: JSON.stringify(requestBody)
+            }
+        );
 
-        const data = await response.json();
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error("The server returned an invalid response.");
+        }
 
         if (!response.ok) {
             throw new Error(data.error || "Could not sign in.");
         }
 
-        passwordInput.value = "";
+        if (!data.user || !data.user.username) {
+            throw new Error("The server did not return your account details.");
+        }
 
         username = data.user.username;
+        passwordInput.value = "";
+
+        loginError.textContent = "Account accepted. Connecting to chat...";
 
         socket.connect();
 
+        clearTimeout(joinTimer);
+
+        joinTimer = setTimeout(() => {
+
+            if (!joined) {
+
+                joinButton.disabled = false;
+
+                joinButton.textContent = submittedMode === "signup"
+                    ? "CREATE ACCOUNT →"
+                    : "LOG IN →";
+
+                loginError.textContent =
+                    "Your account was accepted, but the chat connection timed out. Try refreshing the page and logging in.";
+
+            }
+
+        }, 12000);
+
     } catch (error) {
 
-        loginError.textContent =
-            error.message || "Something went wrong.";
+        if (error.name === "AbortError") {
+
+            loginError.textContent =
+                "The server took too long to respond. Check Render Runtime Logs.";
+
+        } else {
+
+            loginError.textContent =
+                error.message || "Something went wrong.";
+
+        }
 
         joinButton.disabled = false;
 
-        setAuthMode(authMode);
+        joinButton.textContent = submittedMode === "signup"
+            ? "CREATE ACCOUNT →"
+            : "LOG IN →";
+
+        /*
+         * Important:
+         * We do NOT call setAuthMode() here.
+         * The checkbox therefore stays checked after a failed attempt.
+         */
+
     }
 }
 
 joinButton.addEventListener("click", submitAuth);
 
 [usernameInput, passwordInput].forEach(input => {
+
     input.addEventListener("keydown", event => {
+
         if (event.key === "Enter") {
             submitAuth();
         }
+
     });
+
 });
 
 /* SCREEN MANAGEMENT */
 
 function showChat() {
+
+    clearTimeout(joinTimer);
+
+    joined = true;
+
     loginScreen.style.display = "none";
     chatScreen.style.display = "flex";
 
     currentUsername.textContent = username;
 
+    joinButton.disabled = false;
+
     messageInput.focus();
 }
 
 function showLogin(message = "") {
+
+    clearTimeout(joinTimer);
 
     joined = false;
     username = "";
@@ -1038,7 +1128,7 @@ function showLogin(message = "") {
 
     joinButton.disabled = false;
 
-    setAuthMode("login");
+    setAuthMode("login", true);
 }
 
 /* MESSAGES */
@@ -1063,13 +1153,14 @@ function addMessage(data) {
     const time = document.createElement("span");
     time.className = "message-time";
 
-    time.textContent = new Date(data.timestamp).toLocaleTimeString(
-        [],
-        {
+    const date = new Date(data.timestamp);
+
+    time.textContent = isNaN(date.getTime())
+        ? ""
+        : date.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit"
-        }
-    );
+        });
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
@@ -1116,21 +1207,34 @@ function showWelcomeMessage() {
 /* SOCKET EVENTS */
 
 socket.on("connect", () => {
-    joinButton.disabled = false;
+
+    console.log("Connected to YAPZONE socket.");
+
 });
 
-socket.on("connect_error", () => {
+socket.on("connect_error", error => {
+
+    console.error("Socket connection error:", error.message);
+
     if (!joined) {
+
+        clearTimeout(joinTimer);
+
         joinButton.disabled = false;
 
+        joinButton.textContent = authMode === "signup"
+            ? "CREATE ACCOUNT →"
+            : "LOG IN →";
+
         loginError.textContent =
-            "Could not connect to YAPZONE. Please try again.";
+            "Your account request succeeded, but the chat connection failed. Refresh and try logging in.";
+
     }
+
 });
 
 socket.on("user:joined", data => {
 
-    joined = true;
     username = data.username;
 
     showChat();
@@ -1138,6 +1242,7 @@ socket.on("user:joined", data => {
     onlineCount.textContent = data.usersOnline;
 
     showToast("Welcome to YAPZONE, " + username + "!");
+
 });
 
 socket.on("chat:history", messages => {
@@ -1149,22 +1254,31 @@ socket.on("chat:history", messages => {
     messages.forEach(addMessage);
 
     chatArea.scrollTop = chatArea.scrollHeight;
+
 });
 
 socket.on("chat:error", message => {
+
     showToast(message);
+
 });
 
 socket.on("chat:message", data => {
+
     addMessage(data);
+
 });
 
 socket.on("chat:system", data => {
+
     addSystemMessage(data);
+
 });
 
 socket.on("chat:users", count => {
+
     onlineCount.textContent = count;
+
 });
 
 socket.on("disconnect", () => {
@@ -1172,6 +1286,7 @@ socket.on("disconnect", () => {
     if (joined) {
         showToast("Connection lost. Reconnecting...");
     }
+
 });
 
 /* SEND MESSAGE */
@@ -1201,14 +1316,18 @@ function sendMessage() {
 sendButton.addEventListener("click", sendMessage);
 
 messageInput.addEventListener("keydown", event => {
+
     if (event.key === "Enter") {
         sendMessage();
     }
+
 });
 
 messageInput.addEventListener("input", () => {
+
     characterCount.textContent =
         messageInput.value.length + " / 500";
+
 });
 
 /* LOG OUT */
@@ -1219,10 +1338,13 @@ logoutButton.addEventListener("click", async () => {
 
     try {
 
-        const response = await fetch("/api/logout", {
-            method: "POST",
-            credentials: "same-origin"
-        });
+        const response = await fetchWithTimeout(
+            "/api/logout",
+            {
+                method: "POST",
+                credentials: "same-origin"
+            }
+        );
 
         if (!response.ok) {
             throw new Error("Logout failed.");
@@ -1230,14 +1352,16 @@ logoutButton.addEventListener("click", async () => {
 
         showLogin("You have been logged out.");
 
-    } catch {
+    } catch (error) {
 
-        showToast("Could not log out. Please try again.");
+        showToast(error.message || "Could not log out.");
 
     } finally {
 
         logoutButton.disabled = false;
+
     }
+
 });
 
 /* RESTORE LOGIN SESSION */
@@ -1246,9 +1370,12 @@ async function restoreSession() {
 
     try {
 
-        const response = await fetch("/api/me", {
-            credentials: "same-origin"
-        });
+        const response = await fetchWithTimeout(
+            "/api/me",
+            {
+                credentials: "same-origin"
+            }
+        );
 
         if (!response.ok) {
             throw new Error("Could not check login session.");
@@ -1266,17 +1393,24 @@ async function restoreSession() {
 
             loginScreen.style.display = "flex";
 
-            setAuthMode("signup");
+            setAuthMode("signup", true);
+
         }
 
-    } catch {
+    } catch (error) {
 
         loginError.textContent =
-            "Unable to reach YAPZONE. Please refresh and try again.";
+            "Unable to reach YAPZONE. " +
+            (error.name === "AbortError"
+                ? "The request timed out."
+                : "Please refresh and try again.");
+
     }
+
 }
 
 restoreSession();
+
 </script>
 
 </body>
