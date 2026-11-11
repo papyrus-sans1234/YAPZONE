@@ -1,7 +1,7 @@
 {
   "name": "yapzone",
-  "version": "1.0.0",
-  "description": "A public real-time chatroom",
+  "version": "2.0.0",
+  "description": "A public real-time chatroom with accounts and persistent history",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -10,7 +10,11 @@
     "node": ">=18"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^10.0.0",
     "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "pg": "^8.16.3",
     "socket.io": "^4.8.1"
   }
 }
