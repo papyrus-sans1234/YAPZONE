@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10101c">
+
+<title>YAPZONE — Public Chat</title>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg: #10101c;
+    --panel: #191929;
+    --panel2: #222238;
+    --purple: #8b5cf6;
+    --blue: #6366f1;
+    --text: #f4f3ff;
+    --muted: #9292aa;
+    --border: #303047;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+/* LOGIN SCREEN */
+
+#loginScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background:
+        radial-gradient(circle at 20% 20%, #38245b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #20265a 0%, transparent 40%),
+        var(--bg);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(25, 25, 41, .95);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 35px;
+    text-align: center;
+    box-shadow: 0 20px 70px #0008;
+}
+
+.logo {
+    font-size: 35px;
+    font-weight: 800;
+    letter-spacing: -2px;
+}
+
+.logo span {
+    color: var(--purple);
+}
+
+.login-icon {
+    font-size: 55px;
+    margin-bottom: 12px;
+}
+
+.login-card h2 {
+    margin-top: 24px;
+    font-size: 22px;
+}
+
+.login-card p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 9px;
+    line-height: 1.6;
+}
+
+input, button {
+    font-family: inherit;
+}
+
+#usernameInput {
+    width: 100%;
+    margin-top: 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px;
+    color: white;
+    outline: none;
+    font-size: 15px;
+}
+
+#usernameInput:focus,
+#messageInput:focus {
+    border-color: var(--purple);
+}
+
+.primary-btn {
+    width: 100%;
+    padding: 15px;
+    margin-top: 13px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(120deg, var(--purple), var(--blue));
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.primary-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+}
+
+.primary-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#loginError {
+    color: #fb7185;
+    font-size: 12px;
+    margin-top: 12px;
+    min-height: 16px;
+}
+
+/* CHAT APPLICATION */
+
+#chatScreen {
+    display: none;
+    height: 100dvh;
+    max-width: 1150px;
+    margin: auto;
+    padding: 15px;
+}
+
+.chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+/* HEADER */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: #1c1c2e;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.header-logo {
+    width: 43px;
+    height: 43px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--purple), var(--blue));
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+}
+
+.header h1 {
+    font-size: 20px;
+    letter-spacing: -1px;
+}
+
+.header p {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+.online {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #25253b;
+    padding: 9px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    color: #c4b5fd;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #22c55e;
+}
+
+/* CHAT AREA */
+
+.chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+}
+
+.welcome-message {
+    text-align: center;
+    margin: 12px auto 20px;
+    max-width: 350px;
+}
+
+.welcome-message h2 {
+    font-size: 18px;
+    margin-bottom: 7px;
+}
+
+.welcome-message p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: min(75%, 520px);
+    align-self: flex-start;
+    animation: appear .2s ease;
+}
+
+.message.own {
+    align-self: flex-end;
+}
+
+.message-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    padding: 0 4px;
+}
+
+.message-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c4b5fd;
+}
+
+.message.own .message-name {
+    color: #93c5fd;
+}
+
+.message-time {
+    font-size: 10px;
+    color: #77778e;
+}
+
+.message-bubble {
+    padding: 12px 15px;
+    border-radius: 15px;
+    background: var(--panel2);
+    font-size: 14px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.message.own .message-bubble {
+    background: linear-gradient(135deg, #6243ae, #4545a0);
+    border-bottom-right-radius: 4px;
+}
+
+.message:not(.own) .message-bubble {
+    border-bottom-left-radius: 4px;
+}
+
+.system-message {
+    align-self: center;
+    background: #25253a;
+    color: #aaaac4;
+    border: 1px solid var(--border);
+    padding: 7px 13px;
+    border-radius: 30px;
+    font-size: 11px;
+    text-align: center;
+    max-width: 90%;
+    animation: appear .2s ease;
+}
+
+/* INPUT AREA */
+
+.input-area {
+    padding: 15px 20px;
+    background: #1c1c2e;
+    border-top: 1px solid var(--border);
+}
+
+.input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+}
+
+#messageInput {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    outline: none;
+    padding: 11px;
+    color: white;
+    font-size: 14px;
+}
+
+#messageInput::placeholder {
+    color: #77778e;
+}
+
+#sendButton {
+    width: 43px;
+    height: 43px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--purple), var(--blue));
+    color: white;
+    font-size: 19px;
+    cursor: pointer;
+}
+
+#sendButton:hover {
+    filter: brightness(1.2);
+}
+
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 5px 0;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+/* NOTIFICATIONS */
+
+#toast {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    background: #292940;
+    border: 1px solid var(--border);
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: .25s;
+    z-index: 20;
+    max-width: 90%;
+    text-align: center;
+}
+
+#toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+    #chatScreen {
+        padding: 0;
+    }
+
+    .chat-container {
+        border-radius: 0;
+        border: none;
+    }
+
+    .header {
+        padding: 14px;
+    }
+
+    .header h1 {
+        font-size: 18px;
+    }
+
+    .chat-area {
+        padding: 15px;
+    }
+
+    .message {
+        max-width: 88%;
+    }
+
+    .input-area {
+        padding: 10px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    .login-card {
+        padding: 25px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN SCREEN -->
+
+<div id="loginScreen">
+
+    <div class="login-card">
+
+        <div class="login-icon">💬</div>
+
+        <div class="logo">
+            YAP<span>ZONE</span>
+        </div>
+
+        <h2>Enter the conversation.</h2>
+
+        <p>
+            One internet. Countless conversations.<br>
+            Choose a username and join everyone.
+        </p>
+
+        <input
+            id="usernameInput"
+            type="text"
+            maxlength="20"
+            placeholder="Your username..."
+            autocomplete="off"
+        >
+
+        <button class="primary-btn" id="joinButton">
+            JOIN YAPZONE →
+        </button>
+
+        <div id="loginError"></div>
+
+    </div>
+
+</div>
+
+<!-- CHAT SCREEN -->
+
+<div id="chatScreen">
+
+    <div class="chat-container">
+
+        <header class="header">
+
+            <div class="header-left">
+
+                <div class="header-logo">💬</div>
+
+                <div>
+                    <h1>YAPZONE</h1>
+                    <p>Less scrolling. More yapping.</p>
+                </div>
+
+            </div>
+
+            <div class="online">
+                <span class="online-dot"></span>
+                <span id="onlineCount">0</span>
+                ONLINE
+            </div>
+
+        </header>
+
+        <main class="chat-area" id="chatArea">
+
+            <div class="welcome-message">
+                <h2>Welcome to YAPZONE!</h2>
+                <p>
+                    This is a public chatroom.
+                    Be respectful and enjoy the conversation.
+                </p>
+            </div>
+
+        </main>
+
+        <footer class="input-area">
+
+            <div class="input-row">
+
+                <input
+                    id="messageInput"
+                    type="text"
+                    maxlength="500"
+                    placeholder="Type something..."
+                    autocomplete="off"
+                >
+
+                <button id="sendButton" title="Send message">
+                    ➤
+                </button>
+
+            </div>
+
+            <div class="footer-info">
+                <span>Chatting as <b id="currentUsername"></b></span>
+                <span id="characterCount">0 / 500</span>
+            </div>
+
+        </footer>
+
+    </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+
+// CONNECT TO BACKEND
+
+const socket = io({
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000
+});
+
+// ELEMENTS
+
+const loginScreen = document.getElementById("loginScreen");
+const chatScreen = document.getElementById("chatScreen");
+
+const usernameInput = document.getElementById("usernameInput");
+const joinButton = document.getElementById("joinButton");
+const loginError = document.getElementById("loginError");
+
+const chatArea = document.getElementById("chatArea");
+const messageInput = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
+
+const onlineCount = document.getElementById("onlineCount");
+const currentUsername = document.getElementById("currentUsername");
+const characterCount = document.getElementById("characterCount");
+const toast = document.getElementById("toast");
+
+let username = "";
+let joined = false;
+let toastTimer;
+
+// NOTIFICATIONS
+
+function showToast(message) {
+
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    clearTimeout(toastTimer);
+
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+
+}
+
+// ADD CHAT MESSAGE
+
+function addMessage(data) {
+
+    const message = document.createElement("div");
+
+    message.className = "message";
+
+    if (data.username === username) {
+        message.classList.add("own");
+    }
+
+    const info = document.createElement("div");
+    info.className = "message-info";
+
+    const name = document.createElement("span");
+    name.className = "message-name";
+    name.textContent = data.username;
+
+    const time = document.createElement("span");
+    time.className = "message-time";
+
+    const date = new Date(data.timestamp);
+
+    time.textContent = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+
+    // IMPORTANT: textContent prevents HTML injection.
+    bubble.textContent = data.text;
+
+    info.appendChild(name);
+    info.appendChild(time);
+
+    message.appendChild(info);
+    message.appendChild(bubble);
+
+    chatArea.appendChild(message);
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+}
+
+// SYSTEM MESSAGES
+
+function addSystemMessage(data) {
+
+    const element = document.createElement("div");
+
+    element.className = "system-message";
+
+    element.textContent = data.text;
+
+    chatArea.appendChild(element);
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+}
+
+// JOIN CHAT
+
+function joinChat() {
+
+    if (joined) return;
+
+    const name = usernameInput.value.trim();
+
+    if (name.length < 2 || name.length > 20) {
+        loginError.textContent =
+            "Username must be between 2 and 20 characters.";
+        return;
+    }
+
+    if (!socket.connected) {
+        loginError.textContent =
+            "Connecting to server... Please wait.";
+        return;
+    }
+
+    username = name;
+
+    joinButton.disabled = true;
+    joinButton.textContent = "JOINING...";
+
+    loginError.textContent = "";
+
+    socket.emit("user:join", {
+        username: username
+    });
+
+}
+
+// JOIN BUTTON
+
+joinButton.addEventListener("click", joinChat);
+
+usernameInput.addEventListener("keydown", (event) => {
+
+    if (event.key === "Enter") {
+        joinChat();
+    }
+
+});
+
+// JOIN CONFIRMATION
+
+socket.on("user:joined", (data) => {
+
+    joined = true;
+
+    username = data.username;
+
+    loginScreen.style.display = "none";
+    chatScreen.style.display = "block";
+
+    currentUsername.textContent = username;
+
+    onlineCount.textContent = data.usersOnline;
+
+    messageInput.focus();
+
+    showToast("Welcome to YAPZONE, " + username + "!");
+
+});
+
+// SERVER ERRORS
+
+socket.on("chat:error", (message) => {
+
+    if (!joined) {
+
+        loginError.textContent = message;
+
+        joinButton.disabled = false;
+        joinButton.textContent = "JOIN YAPZONE →";
+
+    } else {
+
+        showToast(message);
+
+    }
+
+});
+
+// RECEIVE MESSAGES
+
+socket.on("chat:message", (data) => {
+
+    addMessage(data);
+
+});
+
+// RECEIVE SYSTEM MESSAGES
+
+socket.on("chat:system", (data) => {
+
+    addSystemMessage(data);
+
+});
+
+// ONLINE USER COUNT
+
+socket.on("chat:users", (count) => {
+
+    onlineCount.textContent = count;
+
+});
+
+// SEND MESSAGE
+
+function sendMessage() {
+
+    const text = messageInput.value.trim();
+
+    if (!text || !joined) return;
+
+    if (!socket.connected) {
+        showToast("Connection lost. Please wait...");
+        return;
+    }
+
+    socket.emit("chat:send", {
+        text: text
+    });
+
+    messageInput.value = "";
+
+    characterCount.textContent = "0 / 500";
+
+    messageInput.focus();
+
+}
+
+// SEND BUTTON
+
+sendButton.addEventListener("click", sendMessage);
+
+// ENTER TO SEND
+
+messageInput.addEventListener("keydown", (event) => {
+
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+
+});
+
+// CHARACTER COUNTER
+
+messageInput.addEventListener("input", () => {
+
+    characterCount.textContent =
+        messageInput.value.length + " / 500";
+
+});
+
+// CONNECTION STATUS
+
+socket.on("connect", () => {
+
+    showToast("Connected to YAPZONE server.");
+
+    joinButton.disabled = false;
+    joinButton.textContent = "JOIN YAPZONE →";
+
+    // Rejoin after reconnecting.
+    if (username && joined) {
+
+        joined = false;
+
+        socket.emit("user:join", {
+            username: username
+        });
+
+    }
+
+});
+
+socket.on("disconnect", () => {
+
+    showToast("Connection lost. Reconnecting...");
+
+    if (joined) {
+        joined = false;
+    }
+
+});
+
+socket.on("connect_error", () => {
+
+    if (!joined) {
+        loginError.textContent =
+            "Unable to reach the server. Retrying...";
+    }
+
+});
+
+</script>
+
+</body>
+</html>
