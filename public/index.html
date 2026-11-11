@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#10101c">
-
 <title>YAPZONE — Public Chat</title>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -29,21 +29,15 @@
     padding: 0;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-}
-
 body {
     background: var(--bg);
     color: var(--text);
     font-family: Inter, sans-serif;
-    height: 100vh;
     height: 100dvh;
     overflow: hidden;
 }
 
-/* LOGIN SCREEN */
+/* AUTH SCREEN */
 
 #loginScreen {
     position: fixed;
@@ -53,6 +47,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
     background:
         radial-gradient(circle at 20% 20%, #38245b 0%, transparent 40%),
         radial-gradient(circle at 80% 80%, #20265a 0%, transparent 40%),
@@ -61,11 +56,13 @@ body {
 
 .login-card {
     width: 100%;
-    max-width: 420px;
-    background: rgba(25, 25, 41, .95);
+    max-width: 440px;
+    max-height: 95%;
+    overflow-y: auto;
+    background: rgba(25, 25, 41, .97);
     border: 1px solid var(--border);
     border-radius: 24px;
-    padding: 35px;
+    padding: 30px;
     text-align: center;
     box-shadow: 0 20px 70px #0008;
 }
@@ -81,12 +78,12 @@ body {
 }
 
 .login-icon {
-    font-size: 55px;
-    margin-bottom: 12px;
+    font-size: 48px;
+    margin-bottom: 10px;
 }
 
 .login-card h2 {
-    margin-top: 24px;
+    margin-top: 20px;
     font-size: 22px;
 }
 
@@ -101,9 +98,9 @@ input, button {
     font-family: inherit;
 }
 
-#usernameInput {
+#usernameInput,
+#passwordInput {
     width: 100%;
-    margin-top: 28px;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -113,7 +110,16 @@ input, button {
     font-size: 15px;
 }
 
+#usernameInput {
+    margin-top: 25px;
+}
+
+#passwordInput {
+    margin-top: 12px;
+}
+
 #usernameInput:focus,
+#passwordInput:focus,
 #messageInput:focus {
     border-color: var(--purple);
 }
@@ -148,6 +154,94 @@ input, button {
     font-size: 12px;
     margin-top: 12px;
     min-height: 16px;
+}
+
+.auth-switch {
+    margin-top: 15px;
+    border: 0;
+    background: transparent;
+    color: #c4b5fd;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.auth-switch:hover {
+    text-decoration: underline;
+}
+
+.privacy-note {
+    font-size: 11px !important;
+    color: #85859e !important;
+    margin-top: 14px !important;
+}
+
+/* TERMS */
+
+#termsSection {
+    display: none;
+    margin-top: 18px;
+    text-align: left;
+}
+
+.terms-heading {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #c4b5fd;
+}
+
+.terms-box {
+    max-height: 165px;
+    overflow-y: auto;
+    background: #11111e;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px;
+    color: #b7b7cc;
+    font-size: 11px;
+    line-height: 1.65;
+    overscroll-behavior: contain;
+}
+
+.terms-box h3 {
+    color: white;
+    font-size: 12px;
+    margin: 12px 0 4px;
+}
+
+.terms-box h3:first-child {
+    margin-top: 0;
+}
+
+.terms-box ul {
+    padding-left: 18px;
+}
+
+.terms-box li {
+    margin: 3px 0;
+}
+
+.terms-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 12px;
+    color: #d1d1e2;
+    font-size: 11px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.terms-check input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    accent-color: var(--purple);
+}
+
+.terms-check a {
+    color: #c4b5fd;
 }
 
 /* CHAT APPLICATION */
@@ -216,6 +310,12 @@ input, button {
     margin-top: 3px;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
 .online {
     display: flex;
     align-items: center;
@@ -235,7 +335,23 @@ input, button {
     box-shadow: 0 0 8px #22c55e;
 }
 
-/* CHAT AREA — SCROLLING FIX */
+.logout-btn {
+    border: 1px solid var(--border);
+    background: #292940;
+    color: #fca5a5;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.logout-btn:hover {
+    background: #3a2637;
+}
+
+/* CHAT AREA */
 
 .chat-area {
     flex: 1 1 0;
@@ -254,7 +370,6 @@ input, button {
 }
 
 .welcome-message {
-    flex-shrink: 0;
     text-align: center;
     margin: 12px auto 20px;
     max-width: 350px;
@@ -274,7 +389,6 @@ input, button {
 .message {
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
     max-width: min(75%, 520px);
     align-self: flex-start;
     animation: appear .2s ease;
@@ -327,7 +441,6 @@ input, button {
 }
 
 .system-message {
-    flex-shrink: 0;
     align-self: center;
     background: #25253a;
     color: #aaaac4;
@@ -447,7 +560,30 @@ input, button {
     }
 
     .header {
-        padding: 14px;
+        padding: 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .header-left {
+        gap: 8px;
+    }
+
+    .header-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .header-actions {
+        gap: 6px;
+    }
+
+    .online {
+        padding: 7px 9px;
+    }
+
+    .logout-btn {
+        padding: 8px 9px;
     }
 
     .header h1 {
@@ -468,7 +604,7 @@ input, button {
     }
 
     .login-card {
-        padding: 25px;
+        padding: 22px;
     }
 }
 </style>
@@ -476,23 +612,18 @@ input, button {
 
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- AUTH SCREEN -->
 
 <div id="loginScreen">
-
     <div class="login-card">
 
         <div class="login-icon">💬</div>
+        <div class="logo">YAP<span>ZONE</span></div>
 
-        <div class="logo">
-            YAP<span>ZONE</span>
-        </div>
+        <h2 id="authTitle">Create your account.</h2>
 
-        <h2>Enter the conversation.</h2>
-
-        <p>
-            One internet. Countless conversations.<br>
-            Choose a username and join everyone.
+        <p id="authDescription">
+            Sign up once, then log in whenever you want to chat.
         </p>
 
         <input
@@ -500,17 +631,125 @@ input, button {
             type="text"
             maxlength="20"
             placeholder="Your username..."
-            autocomplete="off"
+            autocomplete="username"
         >
 
+        <input
+            id="passwordInput"
+            type="password"
+            maxlength="72"
+            placeholder="Password (at least 8 characters)"
+            autocomplete="new-password"
+        >
+
+        <!-- TERMS: SIGNUP ONLY -->
+
+        <div id="termsSection">
+
+            <div class="terms-heading">
+                YAPZONE TERMS & CONDITIONS
+            </div>
+
+            <div class="terms-box">
+
+                <h3>1. Public Chatroom</h3>
+                <p>
+                    YAPZONE is a shared public chatroom. Messages can be
+                    seen by other users. New users can also see previous
+                    messages in the shared chat history.
+                </p>
+
+                <h3>2. Protect Your Privacy</h3>
+                <ul>
+                    <li>Do not share your real full name.</li>
+                    <li>Do not share your home address or live location.</li>
+                    <li>Do not share your school name, phone number or email.</li>
+                    <li>Never share passwords or private account details.</li>
+                    <li>Think carefully before sharing anything personal.</li>
+                </ul>
+
+                <h3>3. Respect Other Users</h3>
+                <ul>
+                    <li>Do not bully, threaten or harass people.</li>
+                    <li>Do not target someone because of their identity or beliefs.</li>
+                    <li>Do not impersonate another person.</li>
+                    <li>Do not deliberately spam the chat.</li>
+                </ul>
+
+                <h3>4. Prohibited Content</h3>
+                <ul>
+                    <li>No threats or encouragement of real-world violence.</li>
+                    <li>No sexually explicit content.</li>
+                    <li>No sharing of illegal or harmful material.</li>
+                    <li>No scams, phishing or attempts to steal accounts.</li>
+                </ul>
+
+                <h3>5. Accounts and Passwords</h3>
+                <p>
+                    Keep your password private. Use a unique password
+                    that you do not use for school, email or other accounts.
+                    You are responsible for activity carried out through
+                    your account.
+                </p>
+
+                <h3>6. Chat History</h3>
+                <p>
+                    Messages are stored so everyone can access the shared
+                    conversation history. Do not assume that a message
+                    can be permanently erased after sending it.
+                </p>
+
+                <h3>7. Moderation</h3>
+                <p>
+                    YAPZONE may restrict access or take action against
+                    accounts that break these rules. Access to the service
+                    is not guaranteed.
+                </p>
+
+                <h3>8. Service Availability</h3>
+                <p>
+                    YAPZONE may experience downtime, maintenance or
+                    technical problems. The service is provided as-is
+                    and may change over time.
+                </p>
+
+                <h3>9. Agreement</h3>
+                <p>
+                    By creating an account, you confirm that you have
+                    read and agree to these Terms & Conditions.
+                </p>
+
+                <p style="margin-top:10px;color:#c4b5fd;">
+                    Last updated: 11 November 2026
+                </p>
+
+            </div>
+
+            <label class="terms-check">
+                <input id="termsCheckbox" type="checkbox">
+                <span>
+                    I have read and agree to the YAPZONE Terms & Conditions.
+                </span>
+            </label>
+
+        </div>
+
         <button class="primary-btn" id="joinButton">
-            JOIN YAPZONE →
+            CREATE ACCOUNT →
         </button>
 
-        <div id="loginError"></div>
+        <button class="auth-switch" id="authSwitch">
+            Already have an account? Log in
+        </button>
+
+        <div id="loginError" role="status"></div>
+
+        <p class="privacy-note">
+            Use a unique password. Never reuse your school, email,
+            or personal account password.
+        </p>
 
     </div>
-
 </div>
 
 <!-- CHAT SCREEN -->
@@ -522,20 +761,26 @@ input, button {
         <header class="header">
 
             <div class="header-left">
-
                 <div class="header-logo">💬</div>
 
                 <div>
                     <h1>YAPZONE</h1>
                     <p>Less scrolling. More yapping.</p>
                 </div>
-
             </div>
 
-            <div class="online">
-                <span class="online-dot"></span>
-                <span id="onlineCount">0</span>
-                ONLINE
+            <div class="header-actions">
+
+                <div class="online">
+                    <span class="online-dot"></span>
+                    <span id="onlineCount">0</span>
+                    ONLINE
+                </div>
+
+                <button id="logoutButton" class="logout-btn" type="button">
+                    LOG OUT
+                </button>
+
             </div>
 
         </header>
@@ -584,23 +829,30 @@ input, button {
 <div id="toast"></div>
 
 <script>
-
-// CONNECT TO BACKEND
-
 const socket = io({
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000
+    autoConnect: false,
+    reconnection: true
 });
 
-// ELEMENTS
+/* ELEMENTS */
 
 const loginScreen = document.getElementById("loginScreen");
 const chatScreen = document.getElementById("chatScreen");
 
 const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+
 const joinButton = document.getElementById("joinButton");
+const authSwitch = document.getElementById("authSwitch");
+
+const authTitle = document.getElementById("authTitle");
+const authDescription = document.getElementById("authDescription");
 const loginError = document.getElementById("loginError");
+
+const termsSection = document.getElementById("termsSection");
+const termsCheckbox = document.getElementById("termsCheckbox");
+
+const logoutButton = document.getElementById("logoutButton");
 
 const chatArea = document.getElementById("chatArea");
 const messageInput = document.getElementById("messageInput");
@@ -609,17 +861,19 @@ const sendButton = document.getElementById("sendButton");
 const onlineCount = document.getElementById("onlineCount");
 const currentUsername = document.getElementById("currentUsername");
 const characterCount = document.getElementById("characterCount");
+
 const toast = document.getElementById("toast");
+
+/* STATE */
 
 let username = "";
 let joined = false;
-let hasEnteredChat = false;
+let authMode = "signup";
 let toastTimer;
 
-// NOTIFICATIONS
+/* NOTIFICATIONS */
 
 function showToast(message) {
-
     toast.textContent = message;
     toast.classList.add("show");
 
@@ -628,20 +882,166 @@ function showToast(message) {
     toastTimer = setTimeout(() => {
         toast.classList.remove("show");
     }, 3000);
-
 }
 
-// SCROLL TO LATEST MESSAGE
+/* AUTH MODE */
 
-function scrollToBottom() {
+function setAuthMode(mode) {
+    authMode = mode;
 
-    requestAnimationFrame(() => {
-        chatArea.scrollTop = chatArea.scrollHeight;
+    const signingUp = mode === "signup";
+
+    authTitle.textContent = signingUp
+        ? "Create your account."
+        : "Welcome back.";
+
+    authDescription.textContent = signingUp
+        ? "Sign up once, then log in whenever you want to chat."
+        : "Log in to return to the conversation.";
+
+    joinButton.textContent = signingUp
+        ? "CREATE ACCOUNT →"
+        : "LOG IN →";
+
+    authSwitch.textContent = signingUp
+        ? "Already have an account? Log in"
+        : "New to YAPZONE? Create an account";
+
+    passwordInput.autocomplete = signingUp
+        ? "new-password"
+        : "current-password";
+
+    termsSection.style.display = signingUp ? "block" : "none";
+
+    termsCheckbox.checked = false;
+
+    loginError.textContent = "";
+}
+
+authSwitch.addEventListener("click", () => {
+    setAuthMode(authMode === "signup" ? "login" : "signup");
+});
+
+/* SIGNUP AND LOGIN */
+
+async function submitAuth() {
+
+    const usernameValue = usernameInput.value.trim();
+    const passwordValue = passwordInput.value;
+
+    loginError.textContent = "";
+
+    if (usernameValue.length < 2 || usernameValue.length > 20) {
+        loginError.textContent =
+            "Username must be between 2 and 20 characters.";
+        return;
+    }
+
+    if (authMode === "signup" && passwordValue.length < 8) {
+        loginError.textContent =
+            "Password must contain at least 8 characters.";
+        return;
+    }
+
+    if (!passwordValue) {
+        loginError.textContent = "Please enter your password.";
+        return;
+    }
+
+    if (authMode === "signup" && !termsCheckbox.checked) {
+        loginError.textContent =
+            "You must agree to the Terms & Conditions first.";
+        return;
+    }
+
+    joinButton.disabled = true;
+
+    joinButton.textContent = authMode === "signup"
+        ? "CREATING..."
+        : "LOGGING IN...";
+
+    try {
+
+        const requestBody = {
+            username: usernameValue,
+            password: passwordValue
+        };
+
+        if (authMode === "signup") {
+            requestBody.termsAccepted = termsCheckbox.checked;
+        }
+
+        const response = await fetch(`/api/${authMode}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Could not sign in.");
+        }
+
+        passwordInput.value = "";
+
+        username = data.user.username;
+
+        socket.connect();
+
+    } catch (error) {
+
+        loginError.textContent =
+            error.message || "Something went wrong.";
+
+        joinButton.disabled = false;
+
+        setAuthMode(authMode);
+    }
+}
+
+joinButton.addEventListener("click", submitAuth);
+
+[usernameInput, passwordInput].forEach(input => {
+    input.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            submitAuth();
+        }
     });
+});
 
+/* SCREEN MANAGEMENT */
+
+function showChat() {
+    loginScreen.style.display = "none";
+    chatScreen.style.display = "flex";
+
+    currentUsername.textContent = username;
+
+    messageInput.focus();
 }
 
-// ADD CHAT MESSAGE
+function showLogin(message = "") {
+
+    joined = false;
+    username = "";
+
+    socket.disconnect();
+
+    chatScreen.style.display = "none";
+    loginScreen.style.display = "flex";
+
+    loginError.textContent = message;
+
+    joinButton.disabled = false;
+
+    setAuthMode("login");
+}
+
+/* MESSAGES */
 
 function addMessage(data) {
 
@@ -663,252 +1063,220 @@ function addMessage(data) {
     const time = document.createElement("span");
     time.className = "message-time";
 
-    const date = new Date(data.timestamp);
-
-    time.textContent = date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+    time.textContent = new Date(data.timestamp).toLocaleTimeString(
+        [],
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
-
-    // textContent prevents HTML injection.
     bubble.textContent = data.text;
 
-    info.appendChild(name);
-    info.appendChild(time);
-
-    message.appendChild(info);
-    message.appendChild(bubble);
+    info.append(name, time);
+    message.append(info, bubble);
 
     chatArea.appendChild(message);
 
-    scrollToBottom();
-
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
-
-// SYSTEM MESSAGES
 
 function addSystemMessage(data) {
 
     const element = document.createElement("div");
 
     element.className = "system-message";
-
     element.textContent = data.text;
 
     chatArea.appendChild(element);
 
-    scrollToBottom();
-
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// JOIN CHAT
+function showWelcomeMessage() {
 
-function joinChat() {
+    const welcome = document.createElement("div");
+    welcome.className = "welcome-message";
 
-    if (joined) return;
+    const heading = document.createElement("h2");
+    heading.textContent = "Welcome to YAPZONE!";
 
-    const name = usernameInput.value.trim();
+    const paragraph = document.createElement("p");
 
-    if (name.length < 2 || name.length > 20) {
-        loginError.textContent =
-            "Username must be between 2 and 20 characters.";
-        return;
-    }
+    paragraph.textContent =
+        "This is a public chatroom. Be respectful and enjoy the conversation.";
 
-    if (!socket.connected) {
-        loginError.textContent =
-            "Connecting to server... Please wait.";
-        return;
-    }
+    welcome.append(heading, paragraph);
 
-    username = name;
-
-    joinButton.disabled = true;
-    joinButton.textContent = "JOINING...";
-
-    loginError.textContent = "";
-
-    socket.emit("user:join", {
-        username: username
-    });
-
+    chatArea.appendChild(welcome);
 }
 
-// JOIN BUTTON
+/* SOCKET EVENTS */
 
-joinButton.addEventListener("click", joinChat);
-
-usernameInput.addEventListener("keydown", (event) => {
-
-    if (event.key === "Enter") {
-        joinChat();
-    }
-
+socket.on("connect", () => {
+    joinButton.disabled = false;
 });
 
-// JOIN CONFIRMATION
+socket.on("connect_error", () => {
+    if (!joined) {
+        joinButton.disabled = false;
 
-socket.on("user:joined", (data) => {
+        loginError.textContent =
+            "Could not connect to YAPZONE. Please try again.";
+    }
+});
+
+socket.on("user:joined", data => {
 
     joined = true;
-
     username = data.username;
 
-    loginScreen.style.display = "none";
-
-    // IMPORTANT: flex layout is required for the scroll fix.
-    chatScreen.style.display = "flex";
-
-    currentUsername.textContent = username;
+    showChat();
 
     onlineCount.textContent = data.usersOnline;
 
-    if (!hasEnteredChat) {
-        hasEnteredChat = true;
-        showToast("Welcome to YAPZONE, " + username + "!");
-    } else {
-        showToast("Reconnected to YAPZONE!");
-    }
-
-    scrollToBottom();
-
-    messageInput.focus();
-
+    showToast("Welcome to YAPZONE, " + username + "!");
 });
 
-// SERVER ERRORS
+socket.on("chat:history", messages => {
 
-socket.on("chat:error", (message) => {
+    chatArea.replaceChildren();
 
-    if (!joined) {
+    showWelcomeMessage();
 
-        loginError.textContent = message;
+    messages.forEach(addMessage);
 
-        joinButton.disabled = false;
-        joinButton.textContent = "JOIN YAPZONE →";
-
-    } else {
-
-        showToast(message);
-
-    }
-
+    chatArea.scrollTop = chatArea.scrollHeight;
 });
 
-// RECEIVE MESSAGES
+socket.on("chat:error", message => {
+    showToast(message);
+});
 
-socket.on("chat:message", (data) => {
-
+socket.on("chat:message", data => {
     addMessage(data);
-
 });
 
-// RECEIVE SYSTEM MESSAGES
-
-socket.on("chat:system", (data) => {
-
+socket.on("chat:system", data => {
     addSystemMessage(data);
-
 });
 
-// ONLINE USER COUNT
-
-socket.on("chat:users", (count) => {
-
+socket.on("chat:users", count => {
     onlineCount.textContent = count;
-
 });
 
-// SEND MESSAGE
+socket.on("disconnect", () => {
+
+    if (joined) {
+        showToast("Connection lost. Reconnecting...");
+    }
+});
+
+/* SEND MESSAGE */
 
 function sendMessage() {
 
     const text = messageInput.value.trim();
 
-    if (!text || !joined) return;
+    if (!text || !joined) {
+        return;
+    }
 
     if (!socket.connected) {
         showToast("Connection lost. Please wait...");
         return;
     }
 
-    socket.emit("chat:send", {
-        text: text
-    });
+    socket.emit("chat:send", { text });
 
     messageInput.value = "";
 
     characterCount.textContent = "0 / 500";
 
     messageInput.focus();
-
 }
-
-// SEND BUTTON
 
 sendButton.addEventListener("click", sendMessage);
 
-// ENTER TO SEND
-
-messageInput.addEventListener("keydown", (event) => {
-
+messageInput.addEventListener("keydown", event => {
     if (event.key === "Enter") {
         sendMessage();
     }
-
 });
-
-// CHARACTER COUNTER
 
 messageInput.addEventListener("input", () => {
-
     characterCount.textContent =
         messageInput.value.length + " / 500";
-
 });
 
-// CONNECTION STATUS
+/* LOG OUT */
 
-socket.on("connect", () => {
+logoutButton.addEventListener("click", async () => {
 
-    showToast("Connected to YAPZONE server.");
+    logoutButton.disabled = true;
 
-    joinButton.disabled = false;
-    joinButton.textContent = "JOIN YAPZONE →";
+    try {
 
-    // Rejoin automatically after reconnecting.
-    if (username && hasEnteredChat) {
-
-        joined = false;
-
-        socket.emit("user:join", {
-            username: username
+        const response = await fetch("/api/logout", {
+            method: "POST",
+            credentials: "same-origin"
         });
 
+        if (!response.ok) {
+            throw new Error("Logout failed.");
+        }
+
+        showLogin("You have been logged out.");
+
+    } catch {
+
+        showToast("Could not log out. Please try again.");
+
+    } finally {
+
+        logoutButton.disabled = false;
     }
-
 });
 
-socket.on("disconnect", () => {
+/* RESTORE LOGIN SESSION */
 
-    showToast("Connection lost. Reconnecting...");
+async function restoreSession() {
 
-    joined = false;
+    try {
 
-});
+        const response = await fetch("/api/me", {
+            credentials: "same-origin"
+        });
 
-socket.on("connect_error", () => {
+        if (!response.ok) {
+            throw new Error("Could not check login session.");
+        }
 
-    if (!hasEnteredChat) {
+        const data = await response.json();
+
+        if (data.user) {
+
+            username = data.user.username;
+
+            socket.connect();
+
+        } else {
+
+            loginScreen.style.display = "flex";
+
+            setAuthMode("signup");
+        }
+
+    } catch {
+
         loginError.textContent =
-            "Unable to reach the server. Retrying...";
+            "Unable to reach YAPZONE. Please refresh and try again.";
     }
+}
 
-});
-
+restoreSession();
 </script>
 
 </body>
